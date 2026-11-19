@@ -22,6 +22,15 @@ func WithImageDithering(mode DitheringMode) Options {
 	}
 }
 
+// WithRemoteImages enables fetching images referenced by remote HTTP(S) URLs.
+// Remote images are disabled by default so rendering never performs network
+// access unless it is explicitly opted into.
+func WithRemoteImages(enabled bool) Options {
+	return func(r *renderer) {
+		r.allowRemoteImages = enabled
+	}
+}
+
 // Use a custom collection of ANSI colors for the headings
 func WithHeadingShades(shades []shadeFmt) Options {
 	return func(r *renderer) {
