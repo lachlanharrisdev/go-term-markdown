@@ -106,6 +106,10 @@ type renderer struct {
 	// DitheringWithBlocks is recommended if a terminal UI library is used
 	imageDithering ansimage.DitheringMode
 
+	// allowRemoteImages controls whether images referenced by remote HTTP(S)
+	// URLs may be fetched. Disabled by default to avoid network access.
+	allowRemoteImages bool
+
 	// all the custom left paddings, without the fixed space from leftPad
 	padAccumulator []string
 
@@ -893,7 +897,7 @@ func (r *renderer) renderImage(dest string, title string, lineWidth int) (result
 		return fmt.Sprintf("![%s](%s)", title, Blue(dest)), false
 	}
 
-	reader, err := imageFromDestination(dest)
+	reader, err := r.imageFromDestination(dest)
 	if err != nil {
 		return fallback()
 	}
@@ -918,17 +922,22 @@ func (r *renderer) renderImage(dest string, title string, lineWidth int) (result
 	return fmt.Sprintf("%s%s", img.Render(), Blue(dest)), true
 }
 
-func imageFromDestination(dest string) (io.ReadCloser, error) {
-	client := http.Client{
-		Timeout: 5 * time.Second,
-	}
-
+func (r *renderer) imageFromDestination(dest string) (io.ReadCloser, error) {
 	if strings.HasPrefix(dest, "http://") || strings.HasPrefix(dest, "https://") {
+		if !r.allowRemoteImages {
+			return nil, fmt.Errorf("remote images are disabled")
+		}
+
+		client := http.Client{
+			Timeout: 5 * time.Second,
+		}
+
 		res, err := client.Get(dest)
 		if err != nil {
 			return nil, err
 		}
 		if res.StatusCode != http.StatusOK {
+			_ = res.Body.Close()
 			return nil, fmt.Errorf("http: %v", http.StatusText(res.StatusCode))
 		}
 

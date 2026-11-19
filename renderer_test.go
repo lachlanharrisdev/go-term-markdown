@@ -36,3 +36,17 @@ func TestRemoveLineBreak(t *testing.T) {
 		assert.Equal(t, tt.want, removeLineBreak(tt.input))
 	}
 }
+
+func TestRemoteImagesDisabledByDefault(t *testing.T) {
+	r := NewRenderer(40, 0)
+	assert.False(t, r.allowRemoteImages)
+
+	reader, err := r.imageFromDestination("https://example.com/image.png")
+	assert.Error(t, err)
+	assert.Nil(t, reader)
+}
+
+func TestWithRemoteImages(t *testing.T) {
+	r := NewRenderer(40, 0, WithRemoteImages(true))
+	assert.True(t, r.allowRemoteImages)
+}
